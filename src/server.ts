@@ -4,12 +4,12 @@ import dotenv from "dotenv";
 import {
   addDummyDbItems,
   addDbItem,
-  getAllDbItems,
   getDbItemById,
   DbItem,
   updateDbItemById,
 } from "./db";
-import filePath from "./filePath";
+//import filePath from "./filePath";
+import { v4 as uuidv4 } from "uuid";
 
 // loading in some dummy items into the database
 // (comment out if desired, or change the number)
@@ -27,18 +27,51 @@ dotenv.config();
 
 // use the environment variable PORT, or 4000 as a fallback
 const PORT_NUMBER = process.env.PORT ?? 4000;
+export interface ToDoItem {
+  message: string;
+  id: string;
+}
+let ToDoItems: ToDoItem[] = [];
 
-// API info page
-app.get("/", (req, res) => {
-  const pathToFile = filePath("../public/index.html");
-  res.sendFile(pathToFile);
+// API full list of todo
+
+app.get("/list", (req, res) => {
+  // const pathToFile = filePath("../public/index.html");
+  //res.sendFile(pathToFile);
+  res.json(ToDoItems);
 });
 
-// GET /items
-app.get("/items", (req, res) => {
-  const allSignatures = getAllDbItems();
-  res.status(200).json(allSignatures);
+//POST /list
+app.post("/list", (req, res) => {
+  const newToDo = req.body;
+  const userId = uuidv4();
+  const newToDoWithID: ToDoItem = { ...newToDo, id: userId };
+  ToDoItems.push(newToDoWithID);
+  res.send(newToDoWithID);
 });
+//GET by id
+app.get("/list/:id", (req, res) => {
+  const { id } = req.params;
+  const specificToDo = ToDoItems.find((el) => id == el.id);
+  res.json(specificToDo);
+});
+//DELETE by id
+app.delete("/list/:id", (req, res) => {
+  const { id } = req.params;
+  ToDoItems = ToDoItems.filter((el) => el.id !== id);
+  res.json(ToDoItems);
+});
+//PATCH by id
+app.patch("/list/:id", (req, res) => {
+  const { id } = req.params;
+  const { message } = req.body;
+  const itemToBeUpdated = ToDoItems.find((el) => el.id === id);
+  if (itemToBeUpdated) {
+    itemToBeUpdated.message = message;
+  }
+  res.json(ToDoItems);
+});
+//-------//
 
 // POST /items
 app.post<{}, {}, DbItem>("/items", (req, res) => {
